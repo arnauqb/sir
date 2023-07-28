@@ -1,0 +1,6 @@
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+GraphNeuralNetworks = "cffab07f-9bc2-4db1-8861-388f63bf7694"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+GumbelSoftmax = "f60ed98c-c695-46ff-9817-9af1b038875e"
+StochasticAD = "e4facb34-4f7e-4bec-b153-e122c37934ac"

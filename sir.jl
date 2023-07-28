@@ -64,7 +64,7 @@ function Base.run(g, beta, gamma, initial_fraction_infected, n_timesteps, delta_
 end
 end # module
 
-using .SIR, Graphs, Plots, Random
+using .SIR, Graphs, PyPlot, Random
 
 Random.seed!(1)
 
@@ -80,7 +80,12 @@ graph = complete_graph(n_agents)
 S_t, I_t, R_t = SIR.run(graph, beta, gamma, initial_fraction_infected, n_timesteps, delta_t, diff_mode)
 
 # plot the results normalized with labels, title and save to file.
-plot(1:n_timesteps, S_t ./ n_agents, label = "S", title = "SIR Julia", xlabel = "t", ylabel = "fraction", legend = :bottomright, dpi = 150)
-plot!(1:n_timesteps, I_t ./ n_agents, label = "I")
-plot!(1:n_timesteps, R_t ./ n_agents, label = "R")
-savefig("sir_julia.png")
+f, ax = subplots()
+ax.plot(1:n_timesteps, S_t ./ n_agents, label = "S")
+ax.plot(1:n_timesteps, I_t ./ n_agents, label = "I")
+ax.plot(1:n_timesteps, R_t ./ n_agents, label = "R")
+ax.set_title("SIR Julia")
+ax.set_xlabel("Time")
+ax.set_ylabel("Fraction of population")
+ax.legend()
+f.savefig("sir_julia.png", dpi=150)

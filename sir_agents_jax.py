@@ -169,7 +169,7 @@ if __name__ == "__main__":
     parser.add_argument("--beta", type=float, default=0.1)
     parser.add_argument("--gamma", type=float, default=0.05)
     parser.add_argument("--delta_t", type=float, default=1.0)
-    parser.add_argument("--gs", type=bool, default=False)
+    parser.add_argument("--gs", type=bool, default=True)
 
     params = parser.parse_args()
     USE_GS = params.gs
@@ -193,11 +193,12 @@ if __name__ == "__main__":
 
     # plot normalized sir
     f, ax = plt.subplots()
-    ax.plot(susceptible_per_day / params.n_agents, label="susceptible")
-    ax.plot(infected_per_day / params.n_agents, label="infected")
-    ax.plot(recovered_per_day / params.n_agents, label="recovered")
+    ax.plot(susceptible_per_day / params.n_agents, label="S")
+    ax.plot(infected_per_day / params.n_agents, label="I")
+    ax.plot(recovered_per_day / params.n_agents, label="R")
     ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("fraction of population")
+    ax.set_title("Agents JAX")
     f.savefig("sir_jax.png", dpi=150)
     #plt.show()

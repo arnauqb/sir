@@ -160,6 +160,7 @@ if __name__ == "__main__":
     plt.ylabel("Fraction of agents")
     plt.ylim(0,1)
     plt.legend()
+    plt.title("Agents PyTorch")
     plt.savefig("sir_agents_torch.png", dpi=150)
     #plt.show()
 

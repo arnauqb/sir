@@ -55,6 +55,7 @@ if __name__ == "__main__":
     plt.xlabel("Time")
     plt.ylabel("Fraction of agents")
     plt.legend()
+    plt.title("ODE PyTorch")
     plt.savefig("sir_ode_torch.png", dpi=150)
     #plt.show()
 

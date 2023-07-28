@@ -1,0 +1,5 @@
+matplotlib==3.7
+networkx==3.0
+torch==2.0
+torch-geometric==2.3
+torchdiffeq==0.2.3

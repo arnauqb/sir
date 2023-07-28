@@ -161,7 +161,7 @@ if __name__ == "__main__":
     plt.ylim(0,1)
     plt.legend()
     plt.title("Agents PyTorch")
-    plt.savefig("sir_agents_torch.png", dpi=150)
+    plt.savefig("./figures/sir_agents_torch.png", dpi=150)
     #plt.show()
 
 

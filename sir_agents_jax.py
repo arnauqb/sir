@@ -200,5 +200,5 @@ if __name__ == "__main__":
     ax.set_xlabel("time")
     ax.set_ylabel("fraction of population")
     ax.set_title("Agents JAX")
-    f.savefig("sir_jax.png", dpi=150)
+    f.savefig("./figures/sir_jax.png", dpi=150)
     #plt.show()

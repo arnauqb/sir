@@ -1,7 +1,16 @@
+name = "SIR"
+uuid = "686656bb-c529-48d0-90c0-71be7b78a1b5"
+authors = ["Arnau Quera-Bofarull <arnauq@protonmail.com>"]
+version = "0.1.0"
+
 [deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GraphNeuralNetworks = "cffab07f-9bc2-4db1-8861-388f63bf7694"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 GumbelSoftmax = "f60ed98c-c695-46ff-9817-9af1b038875e"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+SciMLSensitivity = "1ed8b502-d754-442c-8d5d-10ac956f44a1"
 StochasticAD = "e4facb34-4f7e-4bec-b153-e122c37934ac"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"

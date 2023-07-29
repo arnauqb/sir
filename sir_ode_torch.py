@@ -46,6 +46,7 @@ if __name__ == "__main__":
     model = SIRODE(y0, t)
     params = torch.tensor([args.beta, args.gamma], dtype=torch.float32)
     y = model(params)
+    print(y.shape)
 
     # plot results
     plt.plot(t, y[:, 0], label="S")
@@ -57,6 +58,10 @@ if __name__ == "__main__":
     plt.legend()
     plt.title("ODE PyTorch")
     plt.savefig("./figures/sir_ode_torch.png", dpi=150)
-    #plt.show()
+    plt.show()
+
+    jacobian = torch.autograd.functional.jacobian(lambda x: model(x)[::100], params)
+
+
 
 

@@ -4,7 +4,14 @@ import torch_geometric
 
 
 class SIR(torch.nn.Module):
-    def __init__(self, graph: networkx.Graph, n_timesteps: int, device: str = "cpu"):
+    def __init__(
+        self,
+        graph: networkx.Graph,
+        n_timesteps: int,
+        n_agents: int,
+        device: str = "cpu",
+        delta_t: float = 1.0,
+    ):
         """
         Implements a differentiable SIR model on a graph.
 
@@ -16,9 +23,12 @@ class SIR(torch.nn.Module):
         """
         super().__init__()
         self.n_timesteps = n_timesteps
+        self.n_agents = n_agents
+        self.delta_t = delta_t
         # convert graph from networkx to pytorch geometric
         self.graph = torch_geometric.utils.convert.from_networkx(graph).to(device)
         self.mp = SIRMessagePassing(aggr="add", node_dim=-1)
+        self.device = device
 
     def sample_bernoulli_gs(self, probs: torch.Tensor, tau: float = 0.1):
         """
@@ -43,31 +53,37 @@ class SIR(torch.nn.Module):
         """
         n_agents = self.graph.num_nodes
         # sample the initial infected nodes
-        probs = initial_fraction_infected * torch.ones(n_agents, device=params.device)
+        probs = initial_fraction_infected * torch.ones(n_agents, device=self.device)
         new_infected = self.sample_bernoulli_gs(probs)
         # set the initial state
         infected = new_infected
         susceptible = 1 - new_infected
-        recovered = torch.zeros(n_agents, device=params.device)
+        recovered = torch.zeros(n_agents, device=self.device)
         x = torch.vstack((infected, susceptible, recovered))
         return x.reshape(1, 3, n_agents)
 
-    def step(self, beta, gamma, delta_t, x: torch.Tensor):
+    def step(self, beta, gamma, x: torch.Tensor):
         """
         Runs the model forward for one timestep.
 
         **Arguments**:
 
         - `beta`: the infection probability
-        - `gamma`: the recovery probability 
+        - `gamma`: the recovery probability
         - x: a tensor of shape (3, n_agents) containing the infected, susceptible, and recovered counts.
         """
         infected, susceptible, recovered = x[-1]
         # Get number of infected neighbors per node, return 0 if node is not susceptible.
         n_infected_neighbors = self.mp(self.graph.edge_index, infected, susceptible)
-        n_neighbors = self.mp(self.graph.edge_index, torch.ones(len(infected)), torch.ones(len(susceptible)))
+        n_neighbors = self.mp(
+            self.graph.edge_index,
+            torch.ones(len(infected)),
+            torch.ones(len(susceptible)),
+        )
         # each contact has a beta chance of infecting a susceptible node
-        prob_infection = 1.0 - torch.exp(-beta * n_infected_neighbors / n_neighbors * delta_t)
+        prob_infection = 1.0 - torch.exp(
+            -beta * n_infected_neighbors / n_neighbors * self.delta_t
+        )
         prob_infection = torch.clip(prob_infection, min=1e-10, max=1.0)
         # sample the infected nodes
         new_infected = self.sample_bernoulli_gs(prob_infection)
@@ -90,7 +106,31 @@ class SIR(torch.nn.Module):
 
         - x: a tensor of shape (3, n_agents) containing the infected, susceptible, and recovered counts.
         """
-        return [x[:, 0, :].sum(1), x[:,1, :].sum(1), x[:, 2, :].sum(1)]
+        return [
+            x[:, 0, :].sum(1) / self.n_agents,
+            x[:, 1, :].sum(1) / self.n_agents,
+            x[:, 2, :].sum(1) / self.n_agents,
+        ]
+
+    def forward(self, params):
+        """
+        Runs the model for the specified number of timesteps.
+
+        **Arguments**:
+
+        - params: a tensor of shape (2,) containing the beta and gamma parameters
+        """
+        beta, gamma, initial_fraction_infected = params
+        x = self.initialize(initial_fraction_infected)
+        infected_per_day, susceptible_per_day, recovered_per_day = self.observe(x)
+        for i in range(self.n_timesteps):
+            x = self.step(beta, gamma, x)
+            # get the observations
+            infected, susceptible, recovered = self.observe(x)
+            infected_per_day = torch.cat((infected_per_day, infected))
+            susceptible_per_day = torch.cat((susceptible_per_day, susceptible))
+            recovered_per_day = torch.cat((recovered_per_day, recovered))
+        return susceptible_per_day, infected_per_day, recovered_per_day
 
 
 class SIRMessagePassing(torch_geometric.nn.conv.MessagePassing):
@@ -135,35 +175,25 @@ if __name__ == "__main__":
     params = parser.parse_args()
 
     # create a random graph
-    #graph = networkx.erdos_renyi_graph(params.n_agents, 0.1)
+    # graph = networkx.erdos_renyi_graph(params.n_agents, 0.1)
     graph = networkx.complete_graph(params.n_agents)
 
     # create the model
-    model = SIR(graph, params.n_timesteps, params.device)
-    # initialize the model
-    x = model.initialize(params.initial_fraction_infected)
-    # run the model
-    infected_per_day, susceptible_per_day, recovered_per_day = model.observe(x)
-    for _ in range(params.n_timesteps):
-        x = model.step(params.beta, params.gamma, params.delta_t, x)
-        # get the observations
-        infected, susceptible, recovered = model.observe(x)
-        infected_per_day = torch.cat((infected_per_day, infected))
-        susceptible_per_day = torch.cat((susceptible_per_day, susceptible))
-        recovered_per_day = torch.cat((recovered_per_day, recovered))
+    model = SIR(
+        graph, params.n_timesteps, params.n_agents, params.device, params.delta_t
+    )
+    S, I, R = model(
+        torch.tensor([params.beta, params.gamma, params.initial_fraction_infected])
+    )
 
     # plot the results
-    plt.plot(susceptible_per_day / params.n_agents, label="S")
-    plt.plot(infected_per_day / params.n_agents, label="I")
-    plt.plot(recovered_per_day / params.n_agents, label="R")
+    plt.plot(S.cpu(), label="S")
+    plt.plot(I.cpu(), label="I")
+    plt.plot(R.cpu(), label="R")
     plt.xlabel("Time")
     plt.ylabel("Fraction of agents")
-    plt.ylim(0,1)
+    plt.ylim(0, 1)
     plt.legend()
     plt.title("Agents PyTorch")
     plt.savefig("./figures/sir_agents_torch.png", dpi=150)
-    #plt.show()
-
-
-
-
+    # plt.show()

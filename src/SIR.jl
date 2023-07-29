@@ -1,7 +1,14 @@
 module SIR
 export run, SAD, GS
 
-using GraphNeuralNetworks, Distributions, GumbelSoftmax, Graphs, Zygote, DifferentialEquations
+using DifferentialEquations
+using Distributions
+using GraphNeuralNetworks
+using Graphs
+using GumbelSoftmax
+using StaticArrays
+using SciMLSensitivity
+using Zygote
 
 include("./agents.jl")
 include("./ode.jl")

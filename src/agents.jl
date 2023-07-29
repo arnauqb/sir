@@ -44,16 +44,16 @@ function step(gnn, S, I, R, beta, gamma, delta_t, diff_mode)
 	return S, I, R
 end
 
-function observe(S, I, R)
-	return sum(S), sum(I), sum(R)
+function observe(S, I, R, N)
+	return sum(S) / N, sum(I) / N, sum(R) / N
 end
 
-function Base.run(g, beta, gamma, initial_fraction_infected, n_timesteps, delta_t, diff_mode = SAD())
+function Base.run(g, beta, gamma, initial_fraction_infected, n_timesteps, delta_t, n_agents, diff_mode = SAD())
 	gnn, S, I, R = initialize(g, initial_fraction_infected, diff_mode)
-	S_t, I_t, R_t = observe(S, I, R)
+	S_t, I_t, R_t = observe(S, I, R, n_agents)
 	for t in 2:n_timesteps
 		S, I, R = step(gnn, S, I, R, beta, gamma, delta_t, diff_mode)
-		S_t_i, I_t_i, R_t_i = observe(S, I, R)
+		S_t_i, I_t_i, R_t_i = observe(S, I, R, n_agents)
         # concatenate
         S_t = [S_t; S_t_i]
         I_t = [I_t; I_t_i]

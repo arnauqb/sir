@@ -141,7 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--t0", type=float, default=0.0)
     parser.add_argument("--beta", type=float, default=0.2)
     parser.add_argument("--gamma", type=float, default=0.05)
-    parser.add_argument("--n_agents", type=int, default=2000)
+    parser.add_argument("--n_agents", type=int, default=1000)
     parser.add_argument("--delta_t", type=int, default=1.0)
     parser.add_argument("--n_timesteps", type=int, default=50)
     parser.add_argument("--device", type=str, default="cpu")

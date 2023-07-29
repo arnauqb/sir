@@ -141,21 +141,23 @@ if __name__ == "__main__":
     parser.add_argument("--t0", type=float, default=0.0)
     parser.add_argument("--beta", type=float, default=0.2)
     parser.add_argument("--gamma", type=float, default=0.05)
-    parser.add_argument("--n_agents", type=int, default=10000)
+    parser.add_argument("--n_agents", type=int, default=2000)
     parser.add_argument("--delta_t", type=int, default=1.0)
-    parser.add_argument("--n_timesteps", type=int, default=100)
+    parser.add_argument("--n_timesteps", type=int, default=50)
     parser.add_argument("--device", type=str, default="cpu")
 
     args = parser.parse_args()
+    device = args.device
 
     t1 = args.t0 + args.n_timesteps * args.delta_t
-    t = torch.linspace(args.t0, t1, int((t1 - args.t0) / args.delta_t) + 1)
+    t = torch.linspace(args.t0, t1, int((t1 - args.t0) / args.delta_t) + 1).to(device)
     y0 = torch.tensor(
         [1 - args.initial_fraction_infected, args.initial_fraction_infected, 0.0],
         dtype=torch.float32,
+        device=device
     )
     ode_model = SIRODE(y0, t)
-    ode_params = torch.tensor([args.beta, args.gamma], dtype=torch.float32)
+    ode_params = torch.tensor([args.beta, args.gamma], dtype=torch.float32, device=device)
 
     # agents
     graph = networkx.complete_graph(args.n_agents)
@@ -163,23 +165,24 @@ if __name__ == "__main__":
         graph, args.n_timesteps, args.n_agents, args.device, delta_t=args.delta_t
     )
     agent_params = torch.tensor(
-        [args.beta, args.gamma, args.initial_fraction_infected], dtype=torch.float32
+        [args.beta, args.gamma, args.initial_fraction_infected], dtype=torch.float32, device=device
     )
 
     # check models agree by plotting
-    y = ode_model(ode_params)
+    y = ode_model(ode_params).cpu()
     S = y[:, 0]
     I = y[:, 1]
     R = y[:, 2]
+    print("simulating agents...")
     S_agents, I_agents, R_agents = agents_model(agent_params)
     f, ax = plt.subplots()
     # plot three curves with agents one as a dashed line
     ax.plot(S, label="S", color="C0")
     ax.plot(I, label="I", color="C1")
     ax.plot(R, label="R", color="C2")
-    ax.plot(S_agents, "--", label="S agents", color="C0")
-    ax.plot(I_agents, "--", label="I agents", color="C1")
-    ax.plot(R_agents, "--", label="R agents", color="C2")
+    ax.plot(S_agents.cpu(), "--", label="S agents", color="C0")
+    ax.plot(I_agents.cpu(), "--", label="I agents", color="C1")
+    ax.plot(R_agents.cpu(), "--", label="R agents", color="C2")
     ax.set_xlabel("Time")
     ax.set_ylabel("Fraction of agents")
     ax.set_ylim(0, 1)
@@ -188,13 +191,18 @@ if __name__ == "__main__":
 
     # gradients
     # compute analytical gradient
+    print("Computing analytical gradient...")
     analytical_gradient = compute_analytical_gradient(
         args.beta, args.gamma, I, S, R, args.delta_t
     )
     # compute ode jacobian
-    ode_jacobian = torch.autograd.functional.jacobian(ode_model, ode_params)
+    print("Computing ode jacobian...")
+    ode_jacobian = torch.autograd.functional.jacobian(ode_model, ode_params).cpu()
+
     # compute agents jacobian
-    agents_jacobian = torch.autograd.functional.jacobian(agents_model, agent_params)
+    print("Computing agents jacobian....")
+    agents_jacobian = torch.func.jacfwd(agents_model, randomness="same")(agent_params)
+    agents_jacobian = [p.cpu() for p in agents_jacobian]
 
     # plot comparing jacobians
     f, ax = plt.subplots(1, 3, figsize=(15, 5))

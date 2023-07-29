@@ -28,6 +28,7 @@ class SIR(torch.nn.Module):
         # convert graph from networkx to pytorch geometric
         self.graph = torch_geometric.utils.convert.from_networkx(graph).to(device)
         self.mp = SIRMessagePassing(aggr="add", node_dim=-1)
+        self.aux = torch.ones(self.n_agents, device=device)
         self.device = device
 
     def sample_bernoulli_gs(self, probs: torch.Tensor, tau: float = 0.1):
@@ -77,8 +78,8 @@ class SIR(torch.nn.Module):
         n_infected_neighbors = self.mp(self.graph.edge_index, infected, susceptible)
         n_neighbors = self.mp(
             self.graph.edge_index,
-            torch.ones(len(infected)),
-            torch.ones(len(susceptible)),
+            self.aux,
+            self.aux
         )
         # each contact has a beta chance of infecting a susceptible node
         prob_infection = 1.0 - torch.exp(

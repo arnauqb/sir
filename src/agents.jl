@@ -36,7 +36,7 @@ function step(gnn, S, I, R, beta, gamma, delta_t, diff_mode)
 	n_neighbours = propagate((xi, xj, e) -> xi .+ xj, gnn, +, xi = gnn.ndata[:aux], xj = gnn.ndata[:aux]) ./ 2
 	prob_infection = @. 1.0 - exp(-trans / n_neighbours * beta * delta_t)
 	new_infected = sample_bernoulli(diff_mode, prob_infection)
-	prob_recovery = gamma * I
+	prob_recovery = @. 1.0 - exp(-gamma * delta_t * I)
 	new_recovered = sample_bernoulli(diff_mode, prob_recovery)
     S = S - new_infected
     I = I + new_infected - new_recovered

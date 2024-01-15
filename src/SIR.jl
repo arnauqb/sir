@@ -13,6 +13,7 @@ using Zygote
 include("./agents.jl")
 include("./ode.jl")
 include("./si.jl")
+include("./analytical_sir_gradients.jl")
 
 
 end # module

@@ -5,6 +5,9 @@ struct SAD <: BernoulliGrad end
 struct GS <: BernoulliGrad
 	tau::Float64
 end
+struct GSST <: BernoulliGrad
+end
+
 GS() = GS(0.1)
 
 struct AgentParameters
@@ -33,6 +36,12 @@ function sample_bernoulli(bernoulli_grad::GS, probs)
     probs_cat = [probs 1.0 .- probs]
 	return sample_gumbel_softmax(probs_cat, bernoulli_grad.tau)[:, 1]
 end
+function sample_bernoulli(bernoulli_grad::GSST, probs)
+	return [rand(Bernoulli(p)) for p in probs]
+end
+function frule((Δself, Δargs...), ::typeof(sample_bernoulli), t, probs)
+    return sample_bernoulli(t, probs), ones(length(probs))
+end
 
 function initialize(graph, initial_fraction_infected, bernoulli_grad)
 	n_agents = nv(graph)
@@ -59,24 +68,26 @@ function step(gnn, S, I, R, beta, gamma, delta_t, bernoulli_grad)
     S = S - new_infected
     I = I + new_infected - new_recovered
     R = R + new_recovered
-	return S, I, R
+	return S, I, R, new_infected, new_recovered
 end
 
-function observe(S, I, R, N)
-	return sum(S) / N, sum(I) / N, sum(R) / N
+function observe(S, I, R, new_infected, new_recovered, N)
+	return sum(S) / N, sum(I) / N, sum(R) / N, sum(new_infected) / N, sum(new_recovered) / N
 end
 
 function Base.run(g, beta, gamma, initial_fraction_infected, n_timesteps, delta_t, n_agents, bernoulli_grad = SAD())
 	gnn, S, I, R = initialize(g, initial_fraction_infected, bernoulli_grad)
-	S_t, I_t, R_t = observe(S, I, R, n_agents)
+	S_t, I_t, R_t, delta_I_t, delta_R_t = observe(S, I, R, I, R, n_agents)
 	for t in 2:n_timesteps
-		S, I, R = step(gnn, S, I, R, beta, gamma, delta_t, bernoulli_grad)
-		S_t_i, I_t_i, R_t_i = observe(S, I, R, n_agents)
+		S, I, R, new_I, new_R = step(gnn, S, I, R, beta, gamma, delta_t, bernoulli_grad)
+		S_t_i, I_t_i, R_t_i, delta_I_t_i, delta_R_t_i = observe(S, I, R, new_I, new_R, n_agents)
         S_t = [S_t; S_t_i]
         I_t = [I_t; I_t_i]
         R_t = [R_t; R_t_i]
+        delta_I_t = [delta_I_t; delta_I_t_i]
+        delta_R_t = [delta_R_t; delta_R_t_i]
 	end
-	return S_t, I_t, R_t
+	return S_t, I_t, R_t, delta_I_t, delta_R_t
 end
 
 function Base.run(p::AgentParameters)

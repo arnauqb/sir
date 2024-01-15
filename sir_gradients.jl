@@ -1,7 +1,7 @@
 using SIR, Random, Graphs, StochasticAD, Zygote, PyPlot, ForwardDiff
 using Debugger
 
-include("./analytical_sir_gradients.jl")
+#include("./analytical_sir_gradients.jl")
 include("./plotting.jl")
 
 #Random.seed!(3)
@@ -75,7 +75,7 @@ println("Computing gradients...")
 
 I_t, S_t = curves[2][2], curves[2][1];
 agent_parameters, _ = get_parameters();
-analytical_jacobian = compute_analytical_gradient(agent_parameters.beta, agent_parameters.gamma, I_t, S_t, agent_parameters.delta_t, agent_parameters.n_timesteps);
+analytical_jacobian = SIR.compute_analytical_gradient(agent_parameters.beta, agent_parameters.gamma, I_t, S_t, agent_parameters.delta_t, agent_parameters.n_timesteps);
 #
 f = plot_jacobians([agent_jacobian_gs, agent_jacobian_sad, analytical_jacobian],
 	["agent GS", "agent SAD", "analytical"],

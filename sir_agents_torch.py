@@ -163,6 +163,7 @@ class SIRMessagePassing(torch_geometric.nn.conv.MessagePassing):
 if __name__ == "__main__":
     import argparse
     import matplotlib.pyplot as plt
+    from time import time
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", type=str, default="cpu")
@@ -177,15 +178,19 @@ if __name__ == "__main__":
 
     # create a random graph
     # graph = networkx.erdos_renyi_graph(params.n_agents, 0.1)
-    graph = networkx.complete_graph(params.n_agents)
+    # graph = networkx.complete_graph(params.n_agents)
+    graph = networkx.watts_strogatz_graph(params.n_agents, 10, 0.01)
 
     # create the model
     model = SIR(
         graph, params.n_timesteps, params.n_agents, params.device, params.delta_t
     )
+    t1 = time()
     S, I, R = model(
         torch.tensor([params.beta, params.gamma, params.initial_fraction_infected])
     )
+    t2 = time()
+    print(f"Time elapsed: {t2 - t1:.2f} seconds")
 
     # plot the results
     plt.plot(S.cpu(), label="S")
